@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 320" role="img" aria-label="Universal Dermatology and Vein Care - Medical, Surgical, Cosmetic">
+  <!-- Crescent mark -->
+  <g transform="translate(180,98)">
+    <!-- outer crescent -->
+    <path fill="#2e9fd6" fill-rule="evenodd" d="M-88,0 a88,88 0 1,0 176,0 a88,88 0 1,0 -176,0 M-73,-15 a73,73 0 1,0 146,0 a73,73 0 1,0 -146,0"/>
+    <!-- second crescent -->
+    <path fill="#66b9e2" fill-rule="evenodd" d="M-66,-7 a66,66 0 1,0 132,0 a66,66 0 1,0 -132,0 M-54,-19 a54,54 0 1,0 108,0 a54,54 0 1,0 -108,0"/>
+    <!-- third crescent -->
+    <path fill="#a5d8f0" fill-rule="evenodd" d="M-47,-12 a47,47 0 1,0 94,0 a47,47 0 1,0 -94,0 M-36,-23 a36,36 0 1,0 72,0 a36,36 0 1,0 -72,0"/>
+    <!-- fourth crescent -->
+    <path fill="#d3ecf9" fill-rule="evenodd" d="M-29,-17 a29,29 0 1,0 58,0 a29,29 0 1,0 -58,0 M-20,-26 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0"/>
+    <!-- core disc -->
+    <circle cx="0" cy="-2" r="13" fill="#1583c4"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="180" y="232" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="46" font-weight="700" letter-spacing="6" fill="#1e88c7">UNIVERSAL</text>
+  <text x="180" y="266" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="21" font-weight="700" letter-spacing="2.5" fill="#4a4f54">DERMATOLOGY &amp; VEIN CARE</text>
+  <text x="180" y="294" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="16.5" font-weight="600" letter-spacing="2" fill="#6b7075">MEDICAL <tspan fill="#2e9fd6">|</tspan> SURGICAL <tspan fill="#2e9fd6">|</tspan> COSMETIC</text>
+</svg>

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Dermatology | Online Scheduling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/ederm.css">
+<style>
+  /* ---------- Scheduler page (mobile-first, tokens only) ---------- */
+  .ols-shell {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--sp-3) var(--sp-3) 96px; /* room for sticky action bar */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 720px) {
+    .ols-shell { padding: var(--sp-6) var(--sp-6) var(--sp-12); }
+  }
+
+  /* Header (compact, keeps the form above the fold) */
+  .ols-header { text-align: center; margin-bottom: var(--sp-4); }
+  .ols-header img { width: 118px; max-width: 40vw; height: auto; }
+  .ols-header .sub {
+    margin-top: var(--sp-1);
+    font-size: var(--fs-xs); font-weight: 700;
+    color: var(--ink-500); letter-spacing: .1em; text-transform: uppercase;
+  }
+
+  /* Card that holds the whole flow, per the design system surface style */
+  .ols-card { padding: var(--sp-5); }
+  @media (min-width: 720px) { .ols-card { padding: var(--sp-6); } }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px;
+    margin: -1px; padding: 0; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* Progress */
+  .ols-progress { margin-bottom: var(--sp-5); }
+  .ols-progress__meta {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: var(--sp-2);
+  }
+  .ols-progress__step { font-size: var(--fs-xs); font-weight: 700; color: var(--brand-700); letter-spacing: .05em; text-transform: uppercase; }
+
+  /* Step panel */
+  .ols-panel { animation: ols-in .22s ease; }
+  @keyframes ols-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .ols-title-row { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-1); }
+  .ols-back {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; flex: none;
+    border: 1px solid var(--ink-300); border-radius: var(--r-md);
+    background: #fff; color: var(--ink-600); cursor: pointer;
+  }
+  .ols-back:hover { border-color: var(--brand-300); color: var(--brand-700); background: var(--brand-100); }
+  .ols-back svg { width: 18px; height: 18px; }
+  .ols-title { font-size: var(--fs-xl); letter-spacing: -.01em; }
+  .ols-lead { color: var(--ink-500); font-size: var(--fs-sm); margin: var(--sp-1) 0 var(--sp-5); }
+
+  /* Choice cards (location, provider) */
+  .choice-list { display: grid; gap: var(--sp-3); }
+  .choice {
+    display: flex; align-items: center; gap: var(--sp-3);
+    width: 100%; text-align: left;
+    padding: var(--sp-3) var(--sp-4);
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-lg);
+    cursor: pointer;
+    font: inherit;
+    transition: border-color .15s, background .15s, transform .05s;
+  }
+  .choice:hover { border-color: var(--brand-500); background: var(--brand-100); }
+  .choice:active { transform: translateY(1px); }
+  .choice.is-selected { border-color: var(--brand-700); background: var(--brand-100); }
+  .choice__icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; flex: none;
+    border-radius: var(--r-md);
+    background: var(--brand-100); color: var(--brand-700);
+  }
+  .choice__icon svg { width: 20px; height: 20px; }
+  .choice__meta { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
+  .choice__name { font-weight: 700; color: var(--ink-800); }
+  .choice__sub { font-size: var(--fs-xs); color: var(--ink-500); }
+  .choice__go { margin-left: auto; color: var(--ink-400); flex: none; }
+  .choice__go svg { width: 18px; height: 18px; }
+  @media (min-width: 720px) {
+    .choice-list--providers { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Week view: 7 days, 7 columns, no scrolling */
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3); }
+  .cal-head b { font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .day {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 8px 2px;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    cursor: pointer; font: inherit;
+    transition: border-color .15s, background .15s;
+  }
+  .day:hover { border-color: var(--brand-300); }
+  .day.is-selected { border-color: var(--brand-700); background: var(--brand-700); }
+  .day__dow { font-size: var(--fs-xs); font-weight: 600; color: var(--ink-500); text-transform: uppercase; letter-spacing: .04em; }
+  .day__num { font-size: var(--fs-lg); font-weight: 800; color: var(--ink-800); font-variant-numeric: tabular-nums; }
+  .day.is-selected .day__dow { color: var(--brand-100); }
+  .day.is-selected .day__num { color: #fff; }
+  .day:disabled {
+    background: transparent; border-color: transparent; cursor: default;
+  }
+  .day:disabled .day__dow { color: var(--ink-300); }
+  .day:disabled .day__num { color: var(--ink-300); font-weight: 600; }
+
+  /* Time slots */
+  .slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+  }
+  .slot {
+    min-height: 42px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--brand-700);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .slot:hover { border-color: var(--brand-500); background: var(--brand-100); }
+  .slot.is-selected { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
+
+  /* Review rows */
+  .review-list { display: grid; gap: var(--sp-3); }
+  .review-row {
+    display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    background: #fff; border: 1px solid var(--border); border-radius: var(--r-lg);
+  }
+  .review-row .choice__icon { width: 38px; height: 38px; }
+  .review-row__meta { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
+  .review-row__label { font-size: var(--fs-xs); font-weight: 700; color: var(--ink-400); text-transform: uppercase; letter-spacing: .05em; }
+  .review-row__value { font-weight: 600; color: var(--ink-800); }
+  .review-row__sub { font-size: var(--fs-xs); color: var(--ink-500); }
+  .review-row .btn { margin-left: auto; flex: none; }
+
+  /* Sticky action bar on small screens */
+  .ols-actions { margin-top: var(--sp-5); }
+  .ols-actions:empty { display: none; }
+  @media (max-width: 719px) {
+    .ols-actions {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      margin: 0; padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom));
+      background: rgba(255, 255, 255, .96);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(6px);
+    }
+    .ols-actions:empty { display: none; }
+  }
+
+  /* Success */
+  .ols-success { text-align: center; padding-top: var(--sp-4); }
+  .ols-success__icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--success-100); color: var(--success-600);
+    margin-bottom: var(--sp-3);
+  }
+  .ols-success__icon svg { width: 30px; height: 30px; }
+
+  .ols-foot { margin-top: auto; padding-top: var(--sp-8); text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- Shared icon sprite (subset of the eDermX set) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></symbol>
+  <symbol id="i-chev-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-schedule" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+</svg>
+
+<div class="ols-shell">
+
+  <header class="ols-header">
+    <h1 class="visually-hidden">Universal Dermatology online scheduling</h1>
+    <img src="assets/logo-universal.svg" alt="Universal Dermatology and Vein Care">
+    <p class="sub">Online Scheduling</p>
+  </header>
+
+  <div class="card ols-card">
+    <div class="ols-progress" id="progressWrap">
+      <div class="ols-progress__meta">
+        <span class="ols-progress__step" id="progressLabel">Step 1 of 6</span>
+        <span class="hint" id="progressHint"></span>
+      </div>
+      <div class="progress"><div class="progress__bar" id="progressBar" style="width:16%"></div></div>
+    </div>
+
+    <main id="panel"></main>
+
+    <div class="ols-actions" id="actions"></div>
+  </div>
+
+  <footer class="ols-foot">
+    <p class="hint">Powered by eDerm Systems</p>
+  </footer>
+</div>
+
+<script>
+/* =========================================================
+   Universal Dermatology online scheduler (static prototype)
+   Same steps, fields, and content as the current OLS.
+   Fewer clicks: tapping a location, provider, or time
+   advances automatically; the accordion bars are replaced
+   by a progress bar plus editable selection chips.
+   ========================================================= */
+
+// ---------- Data ----------
+const LOCATIONS = [
+  { id: 'colton',      name: 'Dermatology of Colton Springs' },
+  { id: 'springfield', name: 'Springfield Derm' }
+];
+
+const PROVIDERS = [
+  { id: 'ouhammou', name: 'Reda Ouhammou MD',  initials: 'RO' },
+  { id: 'queen',    name: 'Jason Queen MD',    initials: 'JQ' },
+  { id: 'plotkin',  name: 'Adam Plotkin MD',   initials: 'AP' },
+  { id: 'reyna',    name: 'Dan Reyna MD',      initials: 'DR' },
+  { id: 'eaton-md', name: 'Amy Eaton MD',      initials: 'AE' },
+  { id: 'eaton-pa', name: 'Amy Eaton PA-C',    initials: 'AE' },
+  { id: 'sullivan', name: 'Emily Sullivan MD', initials: 'ES' },
+  { id: 'truong',   name: 'Jason Truong MD',   initials: 'JT' },
+  { id: 'molner',   name: 'Renee Molner MD',   initials: 'RM' }
+];
+
+const REASONS = [
+  'Cosmetic New Patient',
+  'Medical New Patient',
+  'Established Patient Visit',
+  'Full Body Skin Exam',
+  'Acne Visit',
+  'Follow-up Visit'
+];
+
+const GENDERS = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];
+const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed', 'Domestic partnership'];
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOWS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// ---------- State ----------
+const state = {
+  step: 1,                    // 1 info, 2 confirm, 3 location, 4 provider, 5 datetime, 6 review, 7 done
+  first: '', last: '', dob: '',
+  gender: '', marital: '', phone: '', email: '', reason: '',
+  location: null,             // location object
+  provider: null,             // provider object
+  weekOffset: 0,              // weeks ahead of the first bookable week
+  day: null,                  // Date of the chosen day
+  time: null,                 // 'h:mm AM'
+  showAllSlots: false,
+  note: ''
+};
+
+const TODAY = new Date();
+
+// ---------- Helpers ----------
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function icon(id, size) {
+  const s = size ? ` style="width:${size}px;height:${size}px"` : '';
+  return `<svg${s} aria-hidden="true"><use href="#${id}"/></svg>`;
+}
+
+function fmtPhone(v) {
+  const d = v.replace(/\D/g, '').slice(0, 10);
+  if (d.length > 6) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+  if (d.length > 3) return `(${d.slice(0,3)}) ${d.slice(3)}`;
+  return d;
+}
+
+function fmtDayLong(d) {
+  return `${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+// Deterministic pseudo-random so the grid is stable per provider and day
+function hash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+// One bookable week: 7 consecutive days starting tomorrow plus the offset.
+// Providers see OLS patients Mon, Wed, Fri; other days render disabled.
+const MAX_WEEKS = 12;
+
+function weekDays(offset) {
+  const days = [];
+  for (let n = 0; n < 7; n++) {
+    const d = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate() + 1 + offset * 7 + n);
+    days.push({ date: d, open: [1, 3, 5].includes(d.getDay()) });
+  }
+  return days;
+}
+
+function fmtWeekRange(days) {
+  const a = days[0].date, b = days[6].date;
+  const m = (d) => MONTHS[d.getMonth()].slice(0, 3);
+  return a.getMonth() === b.getMonth()
+    ? `${MONTHS[a.getMonth()]} ${a.getDate()} to ${b.getDate()}, ${b.getFullYear()}`
+    : `${m(a)} ${a.getDate()} to ${m(b)} ${b.getDate()}, ${b.getFullYear()}`;
+}
+
+function daySlots(day) {
+  const out = [];
+  const seed = `${state.provider ? state.provider.id : 'p'}-${day.toDateString()}`;
+  for (let m = 8 * 60; m <= 16 * 60 + 45; m += 15) {
+    if (hash(seed + m) % 5 === 0) continue; // some slots already taken
+    const h24 = Math.floor(m / 60), min = m % 60;
+    const h12 = ((h24 + 11) % 12) + 1;
+    out.push(`${h12}:${String(min).padStart(2, '0')} ${h24 < 12 ? 'AM' : 'PM'}`);
+  }
+  return out;
+}
+
+// ---------- Navigation ----------
+const TOTAL_STEPS = 6;
+const STEP_HINTS = { 1: 'About you', 2: 'Your details', 3: 'Location', 4: 'Provider', 5: 'Date and time', 6: 'Review' };
+
+function go(step) {
+  state.step = step;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const t = $('#stepTitle');
+  if (t) t.focus({ preventScroll: true });
+}
+
+function readInfoForm() {
+  state.first = ($('#fFirst') || {}).value !== undefined ? $('#fFirst').value.trim() : state.first;
+  state.last  = ($('#fLast')  || {}).value !== undefined ? $('#fLast').value.trim()  : state.last;
+  state.dob   = ($('#fDob')   || {}).value !== undefined ? $('#fDob').value          : state.dob;
+}
+function readConfirmForm() {
+  ['gender','marital','phone','email','reason'].forEach((k) => {
+    const el = $('#f' + k[0].toUpperCase() + k.slice(1));
+    if (el) state[k] = el.value.trim();
+  });
+}
+
+// ---------- Renderers ----------
+function render() {
+  renderProgress();
+  const panel = $('#panel');
+  const actions = $('#actions');
+  actions.innerHTML = '';
+  switch (state.step) {
+    case 1: renderInfo(panel, actions); break;
+    case 2: renderConfirm(panel, actions); break;
+    case 3: renderLocation(panel); break;
+    case 4: renderProvider(panel); break;
+    case 5: renderDateTime(panel); break;
+    case 6: renderReview(panel, actions); break;
+    case 7: renderSuccess(panel); break;
+  }
+}
+
+function renderProgress() {
+  const wrap = $('#progressWrap');
+  if (state.step === 7) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  $('#progressLabel').textContent = `Step ${state.step} of ${TOTAL_STEPS}`;
+  $('#progressHint').textContent = STEP_HINTS[state.step] || '';
+  $('#progressBar').style.width = `${Math.round(state.step / TOTAL_STEPS * 100)}%`;
+}
+
+function titleRow(title, backStep) {
+  const back = backStep
+    ? `<button class="ols-back" data-back="${backStep}" aria-label="Go back">${icon('i-chev-left')}</button>` : '';
+  return `<div class="ols-title-row">${back}<h2 class="ols-title" id="stepTitle" tabindex="-1">${esc(title)}</h2></div>`;
+}
+
+function bindBack(panel) {
+  const b = panel.querySelector('[data-back]');
+  if (b) b.addEventListener('click', () => go(Number(b.dataset.back)));
+}
+
+// Step 1: Enter your information
+function renderInfo(panel, actions) {
+  panel.innerHTML = `
+    <section class="ols-panel">
+      ${titleRow('Enter your information')}
+      <p class="ols-lead">Your name and date of birth should match your ID.</p>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label" for="fFirst">First Name <span class="req">*</span></label>
+          <input class="input" id="fFirst" autocomplete="given-name" placeholder="Enter your first name" value="${esc(state.first)}">
+        </div>
+        <div class="field">
+          <label class="label" for="fLast">Last Name <span class="req">*</span></label>
+          <!-- Static example of the error state, for design reference only -->
+          <input class="input is-invalid" id="fLast" autocomplete="family-name" placeholder="Enter your last name" value="${esc(state.last)}">
+          <span class="field__error">Please enter your last name</span>
+        </div>
+        <div class="field">
+          <label class="label" for="fDob">Date of Birth <span class="req">*</span></label>
+          <input class="input" id="fDob" type="date" value="${esc(state.dob)}">
+        </div>
+      </div>
+    </section>`;
+  actions.innerHTML = `<button class="btn btn-primary btn-lg btn-block" id="next1">Next</button>`;
+  $('#next1').addEventListener('click', () => {
+    readInfoForm();
+    // Returning-patient lookup happens here in the live product; the
+    // prototype prefills the confirmation step with sample data.
+    if (!state.phone) { state.gender = 'Female'; state.marital = 'Married'; state.phone = '(561) 247-4984'; state.email = 'patient@example.com'; }
+    go(2);
+  });
+}
+
+// Step 2: Please confirm your information
+function renderConfirm(panel, actions) {
+  const opts = (list, sel, ph) =>
+    `<option value="" disabled ${sel ? '' : 'selected'}>${ph}</option>` +
+    list.map((o) => `<option ${o === sel ? 'selected' : ''}>${esc(o)}</option>`).join('');
+  panel.innerHTML = `
+    <section class="ols-panel">
+      ${titleRow('Please confirm your information', 1)}
+      <div class="alert alert-success mb-4">${icon('i-check')}<div><b>Welcome back, ${esc(state.first)}!</b> Review your details and pick a reason for your visit.</div></div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label" for="fGender">Gender <span class="req">*</span></label>
+          <select class="select" id="fGender">${opts(GENDERS, state.gender, 'Select gender')}</select>
+        </div>
+        <div class="field">
+          <label class="label" for="fMarital">Marital Status <span class="req">*</span></label>
+          <select class="select" id="fMarital">${opts(MARITAL, state.marital, 'Select marital status')}</select>
+        </div>
+        <div class="field">
+          <label class="label" for="fPhone">Cell Phone <span class="req">*</span></label>
+          <input class="input" id="fPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-5555" value="${esc(state.phone)}">
+        </div>
+        <div class="field">
+          <label class="label" for="fEmail">Email <span class="req">*</span></label>
+          <input class="input" id="fEmail" type="email" autocomplete="email" placeholder="you@example.com" value="${esc(state.email)}">
+        </div>
+        <div class="field" style="grid-column:1 / -1">
+          <label class="label" for="fReason">Reason for visit <span class="req">*</span></label>
+          <select class="select" id="fReason">${opts(REASONS, state.reason, 'Select a reason')}</select>
+        </div>
+      </div>
+    </section>`;
+  bindBack(panel);
+  $('#fPhone').addEventListener('input', (e) => { e.target.value = fmtPhone(e.target.value); });
+  actions.innerHTML = `<button class="btn btn-primary btn-lg btn-block" id="next2">Next</button>`;
+  $('#next2').addEventListener('click', () => {
+    readConfirmForm();
+    go(3);
+  });
+}
+
+// Step 3: Choose your location (tap advances)
+function renderLocation(panel) {
+  panel.innerHTML = `
+    <section class="ols-panel">
+      ${titleRow('Choose your location', 2)}
+      <p class="ols-lead">Tap a location to continue.</p>
+      <div class="choice-list">
+        ${LOCATIONS.map((l) => `
+          <button class="choice ${state.location && state.location.id === l.id ? 'is-selected' : ''}" data-loc="${l.id}">
+            <span class="choice__icon">${icon('i-pin')}</span>
+            <span class="choice__meta"><span class="choice__name">${esc(l.name)}</span></span>
+            <span class="choice__go">${icon('i-chev-right')}</span>
+          </button>`).join('')}
+      </div>
+    </section>`;
+  bindBack(panel);
+  panel.querySelectorAll('[data-loc]').forEach((b) => b.addEventListener('click', () => {
+    const next = LOCATIONS.find((l) => l.id === b.dataset.loc);
+    if (!state.location || state.location.id !== next.id) {
+      state.provider = null; state.day = null; state.time = null; state.weekOffset = 0;
+    }
+    state.location = next;
+    go(4);
+  }));
+}
+
+// Step 4: Choose your provider (tap advances)
+function renderProvider(panel) {
+  panel.innerHTML = `
+    <section class="ols-panel">
+      ${titleRow('Choose your provider', 3)}
+      <p class="ols-lead">Providers seeing patients at ${esc(state.location.name)}.</p>
+      <div class="choice-list choice-list--providers">
+        ${PROVIDERS.map((p) => `
+          <button class="choice ${state.provider && state.provider.id === p.id ? 'is-selected' : ''}" data-prov="${p.id}">
+            <span class="avatar">${esc(p.initials)}</span>
+            <span class="choice__meta"><span class="choice__name">${esc(p.name)}</span></span>
+            <span class="choice__go">${icon('i-chev-right')}</span>
+          </button>`).join('')}
+      </div>
+    </section>`;
+  bindBack(panel);
+  panel.querySelectorAll('[data-prov]').forEach((b) => b.addEventListener('click', () => {
+    const next = PROVIDERS.find((p) => p.id === b.dataset.prov);
+    if (!state.provider || state.provider.id !== next.id) {
+      state.day = null; state.time = null; state.weekOffset = 0;
+    }
+    state.provider = next;
+    go(5);
+  }));
+}
+
+// Step 5: Choose date and time (tapping a time advances)
+function renderDateTime(panel) {
+  const days = weekDays(state.weekOffset);
+  const inWeek = state.day && days.some((d) => d.open && d.date.toDateString() === state.day.toDateString());
+  if (!inWeek) {
+    const first = days.find((d) => d.open);
+    state.day = first ? first.date : null;
+    state.showAllSlots = false;
+  }
+  const slots = state.day ? daySlots(state.day) : [];
+  const visible = state.showAllSlots ? slots : slots.slice(0, 24);
+
+  panel.innerHTML = `
+    <section class="ols-panel">
+      ${titleRow('Choose a date and time', 4)}
+      <p class="ols-lead">${esc(state.provider.name)} at ${esc(state.location.name)}. All times are Eastern Time.</p>
+      <div class="cal-head">
+        <button class="ols-back" id="wPrev" aria-label="Previous week" ${state.weekOffset === 0 ? 'disabled' : ''}>${icon('i-chev-left')}</button>
+        <b>${fmtWeekRange(days)}</b>
+        <button class="ols-back" id="wNext" aria-label="Next week" ${state.weekOffset >= MAX_WEEKS ? 'disabled' : ''}>${icon('i-chev-right')}</button>
+      </div>
+      <div class="week-grid">
+        ${days.map((d) => `
+          <button class="day ${state.day && d.date.toDateString() === state.day.toDateString() ? 'is-selected' : ''}"
+            data-day="${d.date.toISOString()}" ${d.open ? '' : 'disabled'}>
+            <span class="day__dow">${DOWS[d.date.getDay()]}</span>
+            <span class="day__num">${d.date.getDate()}</span>
+          </button>`).join('')}
+      </div>
+      ${state.day ? `
+        <div class="slot-grid">
+          ${visible.map((t) => `<button class="slot ${state.time === t ? 'is-selected' : ''}" data-time="${t}">${t}</button>`).join('')}
+        </div>
+        ${slots.length > visible.length ? `<button class="btn btn-ghost btn-block mt-3" id="moreSlots">More times</button>` : ''}
+      ` : `
+        <div class="empty"><div class="empty__icon">${icon('i-schedule')}</div><h3>No openings this week</h3><p class="text-sm">Try the next week.</p></div>
+      `}
+    </section>`;
+  bindBack(panel);
+  const prev = $('#wPrev'), next = $('#wNext');
+  if (prev) prev.addEventListener('click', () => { if (state.weekOffset > 0) { state.weekOffset--; state.day = null; render(); } });
+  if (next) next.addEventListener('click', () => { if (state.weekOffset < MAX_WEEKS) { state.weekOffset++; state.day = null; render(); } });
+  panel.querySelectorAll('[data-day]:not([disabled])').forEach((b) => b.addEventListener('click', () => {
+    state.day = new Date(b.dataset.day);
+    state.time = null;
+    state.showAllSlots = false;
+    render();
+  }));
+  const more = $('#moreSlots');
+  if (more) more.addEventListener('click', () => { state.showAllSlots = true; render(); });
+  panel.querySelectorAll('[data-time]').forEach((b) => b.addEventListener('click', () => {
+    state.time = b.dataset.time;
+    go(6);
+  }));
+}
+
+function reviewRow(iconId, label, value, sub, step) {
+  return `
+    <div class="review-row">
+      <span class="choice__icon">${icon(iconId)}</span>
+      <span class="review-row__meta">
+        <span class="review-row__label">${label}</span>
+        <span class="review-row__value">${esc(value)}</span>
+        ${sub ? `<span class="review-row__sub">${esc(sub)}</span>` : ''}
+      </span>
+      <button class="btn btn-outline btn-sm" data-goto="${step}">Change</button>
+    </div>`;
+}
+
+// Step 6: Confirm appointment (optional note lives here)
+function renderReview(panel, actions) {
+  panel.innerHTML = `
+    <section class="ols-panel">
+      ${titleRow('Confirm your appointment', 5)}
+      <p class="ols-lead">Please take a moment to confirm your appointment.</p>
+      <div class="review-list">
+        ${reviewRow('i-schedule', 'When', fmtDayLong(state.day), `${state.time} Eastern Time`, 5)}
+        ${reviewRow('i-user', 'With', state.provider.name, '', 4)}
+        ${reviewRow('i-pin', 'Where', state.location.name, '', 3)}
+      </div>
+      <div class="field mt-5">
+        <label class="label" for="fNote">Optional note</label>
+        <textarea class="textarea" id="fNote" placeholder="Please enter any optional notes for the appointment here">${esc(state.note)}</textarea>
+      </div>
+    </section>`;
+  bindBack(panel);
+  panel.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.goto))));
+  actions.innerHTML = `<button class="btn btn-primary btn-lg btn-block" id="book">Make Appointment</button>`;
+  $('#book').addEventListener('click', () => {
+    state.note = $('#fNote').value.trim();
+    go(7);
+  });
+}
+
+// Success
+function renderSuccess(panel) {
+  panel.innerHTML = `
+    <section class="ols-panel ols-success">
+      <span class="ols-success__icon">${icon('i-check')}</span>
+      <h2 id="stepTitle" tabindex="-1">You're all set, ${esc(state.first)}!</h2>
+      <p class="muted text-sm mt-2">Confirmed! Please contact the office directly if you need to make any changes to your scheduled appointment.</p>
+      <div class="review-list mt-6" style="text-align:left">
+        <div class="review-row">
+          <span class="choice__icon">${icon('i-schedule')}</span>
+          <span class="review-row__meta">
+            <span class="review-row__label">When</span>
+            <span class="review-row__value">${esc(fmtDayLong(state.day))}</span>
+            <span class="review-row__sub">${esc(state.time)} Eastern Time</span>
+          </span>
+        </div>
+        <div class="review-row">
+          <span class="choice__icon">${icon('i-user')}</span>
+          <span class="review-row__meta">
+            <span class="review-row__label">With</span>
+            <span class="review-row__value">${esc(state.provider.name)}</span>
+          </span>
+        </div>
+        <div class="review-row">
+          <span class="choice__icon">${icon('i-pin')}</span>
+          <span class="review-row__meta">
+            <span class="review-row__label">Where</span>
+            <span class="review-row__value">${esc(state.location.name)}</span>
+          </span>
+        </div>
+      </div>
+    </section>`;
+}
+
+render();
+</script>
+</body>
+</html>

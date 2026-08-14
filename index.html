@@ -177,6 +177,27 @@
 
   /* Success */
   .ols-success { text-align: center; padding-top: var(--sp-4); }
+  .summary {
+    text-align: left;
+    background: #fbfcfe;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-2) var(--sp-5);
+  }
+  .summary__row {
+    display: flex; align-items: baseline; gap: var(--sp-4);
+    padding: var(--sp-3) 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .summary__row:last-child { border-bottom: none; }
+  .summary__label {
+    flex: none; width: 64px;
+    font-size: var(--fs-xs); font-weight: 700;
+    color: var(--ink-400); text-transform: uppercase; letter-spacing: .05em;
+  }
+  .summary__meta { display: flex; flex-direction: column; line-height: 1.4; }
+  .summary__value { font-weight: 600; color: var(--ink-800); }
+  .summary__sub { font-size: var(--fs-xs); color: var(--ink-500); }
   .ols-success__icon {
     display: inline-flex; align-items: center; justify-content: center;
     width: 64px; height: 64px; border-radius: 50%;
@@ -449,7 +470,7 @@ function renderConfirm(panel, actions) {
   panel.innerHTML = `
     <section class="ols-panel">
       ${titleRow('Please confirm your information', 1)}
-      <div class="alert alert-success mb-4">${icon('i-check')}<div><b>Welcome back, ${esc(state.first)}!</b> Review your details and pick a reason for your visit.</div></div>
+      <div class="alert alert-success mt-4 mb-4">${icon('i-check')}<div><b>Welcome back, ${esc(state.first)}!</b> Review your details and pick a reason for your visit.</div></div>
       <div class="grid grid-2">
         <div class="field">
           <label class="label" for="fGender">Gender <span class="req">*</span></label>
@@ -629,35 +650,27 @@ function renderReview(panel, actions) {
 }
 
 // Success
+function summaryRow(label, value, sub) {
+  return `
+    <div class="summary__row">
+      <span class="summary__label">${label}</span>
+      <span class="summary__meta">
+        <span class="summary__value">${esc(value)}</span>
+        ${sub ? `<span class="summary__sub">${esc(sub)}</span>` : ''}
+      </span>
+    </div>`;
+}
+
 function renderSuccess(panel) {
   panel.innerHTML = `
     <section class="ols-panel ols-success">
       <span class="ols-success__icon">${icon('i-check')}</span>
-      <h2 id="stepTitle" tabindex="-1">You're all set, ${esc(state.first)}!</h2>
+      <h2 id="stepTitle" tabindex="-1">You're all set${state.first ? ', ' + esc(state.first) : ''}!</h2>
       <p class="muted text-sm mt-2">Confirmed! Please contact the office directly if you need to make any changes to your scheduled appointment.</p>
-      <div class="review-list mt-6" style="text-align:left">
-        <div class="review-row">
-          <span class="choice__icon">${icon('i-schedule')}</span>
-          <span class="review-row__meta">
-            <span class="review-row__label">When</span>
-            <span class="review-row__value">${esc(fmtDayLong(state.day))}</span>
-            <span class="review-row__sub">${esc(state.time)} Eastern Time</span>
-          </span>
-        </div>
-        <div class="review-row">
-          <span class="choice__icon">${icon('i-user')}</span>
-          <span class="review-row__meta">
-            <span class="review-row__label">With</span>
-            <span class="review-row__value">${esc(state.provider.name)}</span>
-          </span>
-        </div>
-        <div class="review-row">
-          <span class="choice__icon">${icon('i-pin')}</span>
-          <span class="review-row__meta">
-            <span class="review-row__label">Where</span>
-            <span class="review-row__value">${esc(state.location.name)}</span>
-          </span>
-        </div>
+      <div class="summary mt-6">
+        ${summaryRow('When', fmtDayLong(state.day), `${state.time} Eastern Time`)}
+        ${summaryRow('With', state.provider.name)}
+        ${summaryRow('Where', state.location.name)}
       </div>
     </section>`;
 }

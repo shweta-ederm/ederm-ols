@@ -64,6 +64,24 @@
   .ols-back svg { width: 18px; height: 18px; }
   .ols-title { font-size: var(--fs-xl); letter-spacing: -.01em; }
   .ols-lead { color: var(--ink-500); font-size: var(--fs-sm); margin: var(--sp-1) 0 var(--sp-5); }
+  .ols-lead .crumb-sep { margin: 0 6px; color: var(--ink-300); }
+  .ols-lead b { color: var(--ink-700); font-weight: 600; }
+
+  /* Sticky mini header: patient name and step, shown once scrolled past the fold */
+  .sticky-header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--sp-3);
+    padding: 10px var(--sp-4);
+    background: rgba(255, 255, 255, .96);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(6px);
+    transform: translateY(-100%);
+    transition: transform .18s ease;
+  }
+  .sticky-header.is-visible { transform: translateY(0); }
+  .sticky-header__name { font-weight: 700; color: var(--ink-800); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sticky-header__step { font-size: var(--fs-xs); font-weight: 700; color: var(--brand-700); letter-spacing: .04em; text-transform: uppercase; flex: none; }
 
   /* Choice cards (location, provider) */
   .choice-list { display: grid; gap: var(--sp-3); }
@@ -224,6 +242,14 @@
   <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
 </svg>
 
+<!-- Sticky mini header: appears once the page is scrolled, shows patient
+     name and current step so context stays visible without repeating
+     inline on every screen. Hidden above the fold and on step 1 and 7. -->
+<div class="sticky-header" id="stickyHeader">
+  <span class="sticky-header__name" id="stickyName"></span>
+  <span class="sticky-header__step" id="stickyStep"></span>
+</div>
+
 <div class="ols-shell">
 
   <header class="ols-header">
@@ -236,7 +262,6 @@
     <div class="ols-progress" id="progressWrap">
       <div class="ols-progress__meta">
         <span class="ols-progress__step" id="progressLabel">Step 1 of 6</span>
-        <span class="hint" id="progressHint"></span>
       </div>
       <div class="progress"><div class="progress__bar" id="progressBar" style="width:16%"></div></div>
     </div>
@@ -370,7 +395,6 @@ function daySlots(day) {
 
 // ---------- Navigation ----------
 const TOTAL_STEPS = 6;
-const STEP_HINTS = { 1: 'About you', 2: 'Your details', 3: 'Location', 4: 'Provider', 5: 'Date and time', 6: 'Review' };
 
 function go(step) {
   state.step = step;
@@ -414,8 +438,19 @@ function renderProgress() {
   if (state.step === 7) { wrap.style.display = 'none'; return; }
   wrap.style.display = '';
   $('#progressLabel').textContent = `Step ${state.step} of ${TOTAL_STEPS}`;
-  $('#progressHint').textContent = STEP_HINTS[state.step] || '';
   $('#progressBar').style.width = `${Math.round(state.step / TOTAL_STEPS * 100)}%`;
+
+  // Sticky mini header content (visibility is driven by scroll, below)
+  const name = (state.first || state.last) ? `${state.first} ${state.last}`.trim() : 'Universal Dermatology';
+  $('#stickyName').textContent = name;
+  $('#stickyStep').textContent = `Step ${state.step} of ${TOTAL_STEPS}`;
+}
+
+// Shows the sticky mini header once the page has been scrolled past the fold.
+function updateStickyHeader() {
+  const el = $('#stickyHeader');
+  const shouldShow = state.step !== 7 && window.scrollY > 160;
+  el.classList.toggle('is-visible', shouldShow);
 }
 
 function titleRow(title, backStep) {
@@ -427,6 +462,12 @@ function titleRow(title, backStep) {
 function bindBack(panel) {
   const b = panel.querySelector('[data-back]');
   if (b) b.addEventListener('click', () => go(Number(b.dataset.back)));
+}
+
+// Breadcrumb-style instruction line, e.g. "Jane > Tap a location to continue."
+function crumbLead(parts) {
+  const sep = '<span class="crumb-sep">&rsaquo;</span>';
+  return parts.map((p) => p).join(` ${sep} `);
 }
 
 // Step 1: Enter your information
@@ -508,7 +549,7 @@ function renderLocation(panel) {
   panel.innerHTML = `
     <section class="ols-panel">
       ${titleRow('Choose your location', 2)}
-      <p class="ols-lead">Tap a location to continue.</p>
+      <p class="ols-lead">${crumbLead([`<b>${esc(state.first)}</b>`, 'Tap a location to continue.'])}</p>
       <div class="choice-list">
         ${LOCATIONS.map((l) => `
           <button class="choice ${state.location && state.location.id === l.id ? 'is-selected' : ''}" data-loc="${l.id}">
@@ -534,7 +575,7 @@ function renderProvider(panel) {
   panel.innerHTML = `
     <section class="ols-panel">
       ${titleRow('Choose your provider', 3)}
-      <p class="ols-lead">Providers seeing patients at ${esc(state.location.name)}.</p>
+      <p class="ols-lead">${crumbLead([`<b>${esc(state.first)}</b>`, esc(state.location.name)])}</p>
       <div class="choice-list choice-list--providers">
         ${PROVIDERS.map((p) => `
           <button class="choice ${state.provider && state.provider.id === p.id ? 'is-selected' : ''}" data-prov="${p.id}">
@@ -570,7 +611,7 @@ function renderDateTime(panel) {
   panel.innerHTML = `
     <section class="ols-panel">
       ${titleRow('Choose a date and time', 4)}
-      <p class="ols-lead">${esc(state.provider.name)} at ${esc(state.location.name)}. All times are Eastern Time.</p>
+      <p class="ols-lead">${crumbLead([`<b>${esc(state.first)}</b>`, esc(state.location.name), esc(state.provider.name)])}</p>
       <div class="cal-head">
         <button class="ols-back" id="wPrev" aria-label="Previous week" ${state.weekOffset === 0 ? 'disabled' : ''}>${icon('i-chev-left')}</button>
         <b>${fmtWeekRange(days)}</b>
@@ -620,7 +661,7 @@ function reviewRow(iconId, label, value, sub, step) {
         <span class="review-row__value">${esc(value)}</span>
         ${sub ? `<span class="review-row__sub">${esc(sub)}</span>` : ''}
       </span>
-      <button class="btn btn-outline btn-sm" data-goto="${step}">Change</button>
+      ${step ? `<button class="btn btn-outline btn-sm" data-goto="${step}">Change</button>` : ''}
     </div>`;
 }
 
@@ -629,15 +670,15 @@ function renderReview(panel, actions) {
   panel.innerHTML = `
     <section class="ols-panel">
       ${titleRow('Confirm your appointment', 5)}
-      <p class="ols-lead">Please take a moment to confirm your appointment.</p>
+      <div class="alert alert-info mt-5 mb-4">${icon('i-info')}<div><b>${esc(`${state.first} ${state.last}`.trim())}</b>, please review your details below and click Make Appointment to confirm.</div></div>
       <div class="review-list">
         ${reviewRow('i-schedule', 'When', fmtDayLong(state.day), `${state.time} Eastern Time`, 5)}
         ${reviewRow('i-user', 'With', state.provider.name, '', 4)}
         ${reviewRow('i-pin', 'Where', state.location.name, '', 3)}
       </div>
       <div class="field mt-5">
-        <label class="label" for="fNote">Optional note</label>
-        <textarea class="textarea" id="fNote" placeholder="Please enter any optional notes for the appointment here">${esc(state.note)}</textarea>
+        <label class="label" for="fNote">Reason for visit</label>
+        <textarea class="textarea" id="fNote" placeholder="Briefly describe your symptoms or concerns.">${esc(state.note)}</textarea>
       </div>
     </section>`;
   bindBack(panel);
@@ -676,6 +717,9 @@ function renderSuccess(panel) {
 }
 
 render();
+
+window.addEventListener('scroll', updateStickyHeader, { passive: true });
+updateStickyHeader();
 </script>
 </body>
 </html>
